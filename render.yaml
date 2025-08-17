@@ -5,22 +5,5 @@ services:
     region: oregon
     branch: main
     goVersion: 1.25
-    buildCommand: |
-      echo "=== Starting Build ==="
-      go version
-      echo "Environment variables:"
-      printenv
-      echo "Building app..."
-      go build -tags netgo -ldflags '-s -w' -o app
-      echo "=== Build Finished ==="
-    startCommand: |
-      echo "=== Starting App ==="
-      ./app
-    envVars:
-      - key: DB_URL
-        value: postgres://wavy_user:123test@<your-db-host>:5432/wavy_health?sslmode=require
-      - key: JWT_SECRET
-        value: supersecretkey123
-      - key: INITIAL_STOCK_PRICE
-        value: "100.0"
-    autoDeploy: true
+    buildCommand: go build -tags netgo -ldflags '-s -w' -o app
+    startCommand: ./app
