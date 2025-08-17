@@ -4,6 +4,7 @@ services:
     env: go
     region: oregon
     branch: main
+    goVersion: 1.25
     buildCommand: go build -tags netgo -ldflags '-s -w' -o app
     startCommand: ./app
     envVars:
@@ -13,5 +14,4 @@ services:
         value: supersecretkey123
       - key: INITIAL_STOCK_PRICE
         value: "100.0"
-    goVersion: 1.25
     autoDeploy: true
