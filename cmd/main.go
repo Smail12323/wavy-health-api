@@ -4,49 +4,55 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+
 	"wavy-health-api/internal/db"
 	"wavy-health-api/internal/handlers"
 	"wavy-health-api/internal/services"
 )
 
-// withCORS middleware for enabling Cross-Origin Resource Sharing
+// withCORS is a simple middleware function that enables
+// Cross-Origin Resource Sharing (CORS) for the API endpoints.
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 
+		// Handle preflight requests
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
+		// Proceed to the next handler
 		next.ServeHTTP(w, r)
 	})
 }
 
 func main() {
-	// Directly get environment variables from the system
+	// 🔹 NO .env file, use Render environment variables
 	dbURL := os.Getenv("DB_URL")
-	jwtSecret := os.Getenv("JWT_SECRET")
-	initialStockPrice := os.Getenv("INITIAL_STOCK_PRICE")
-
-	if dbURL == "" || jwtSecret == "" || initialStockPrice == "" {
-		log.Fatal("Required environment variables not set: DB_URL, JWT_SECRET, INITIAL_STOCK_PRICE")
+	if dbURL == "" {
+		log.Fatal("DB_URL is not set")
 	}
 
-	// Connect to PostgreSQL database using DB_URL
+	// Connect to the PostgreSQL database
 	db.Connect(dbURL)
 
-	// Convert initialStockPrice to float64 (assuming it's a string in env)
-	price, err := strconv.ParseFloat(initialStockPrice, 64)
-	if err != nil {
-		log.Fatal("Invalid INITIAL_STOCK_PRICE value:", err)
+	// Get initial stock price from env (or fallback to 50.0)
+	initialStockPrice := 50.0
+	if val := os.Getenv("INITIAL_STOCK_PRICE"); val != "" {
+		if f, err := strconv.ParseFloat(val, 64); err == nil {
+			initialStockPrice = f
+		}
 	}
 
-	services.InitStockPrice(price)
+	// Initialize stock price
+	services.InitStockPrice(initialStockPrice)
 
-	// Register API routes
+	// Register API routes and wrap them with CORS middleware
 	http.Handle("/price", withCORS(http.HandlerFunc(handlers.PriceHandler)))
 	http.Handle("/buy", withCORS(http.HandlerFunc(handlers.BuyHandler)))
 	http.Handle("/sell", withCORS(http.HandlerFunc(handlers.SellHandler)))
@@ -55,12 +61,13 @@ func main() {
 	http.Handle("/logout", withCORS(http.HandlerFunc(handlers.LogoutHandler)))
 	http.Handle("/register", withCORS(http.HandlerFunc(handlers.RegisterHandler)))
 
-	// Start server on port from environment or default 8080
+	// Determine the port to run the server on
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
+	// Start the HTTP server and log its status
 	log.Println("Server running on port", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
