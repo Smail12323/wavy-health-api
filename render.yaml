@@ -2,14 +2,16 @@ services:
   - type: web
     name: wavy-health-api
     env: go
-    plan: free
+    region: oregon
+    branch: main
     buildCommand: go build -tags netgo -ldflags '-s -w' -o app
     startCommand: ./app
     envVars:
       - key: DB_URL
-        value: $DB_URL
+        value: postgres://wavy_user:123test@<your-db-host>:5432/wavy_health?sslmode=require
       - key: JWT_SECRET
-        value: $JWT_SECRET
+        value: supersecretkey123
       - key: INITIAL_STOCK_PRICE
-        value: $INITIAL_STOCK_PRICE
+        value: "100.0"
     goVersion: 1.25
+    autoDeploy: true
